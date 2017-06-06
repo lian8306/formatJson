@@ -1,0 +1,9 @@
+{
+  "name": "format json",
+  "version": "0.0.1",
+  "author": "C盘",
+  "description": "",
+  "dependencies": {
+    "formidable": "^1.1.1"
+  }
+}
