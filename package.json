@@ -1,9 +1,10 @@
 {
-  "name": "format json",
+  "name": "format_json",
   "version": "0.0.1",
   "author": "C盘",
   "description": "",
   "dependencies": {
+    "excel-export": "^0.5.1",
     "formidable": "^1.1.1"
   }
 }

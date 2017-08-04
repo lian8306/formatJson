@@ -4,8 +4,14 @@ var requestHandlers = require('./requestHandlers');
 
 var handle = {}
 handle["/"]=requestHandlers.start;
+for(var i in requestHandlers){
+	if(requestHandlers.hasOwnProperty(i)){
+		handle['/'+i] = requestHandlers[i];
+	}
+}
 // handle["/start"]=requestHandlers.start;
-handle["/upload"]=requestHandlers.upload;
+// handle["/upload"]=requestHandlers.upload;
+// handle["/export_chinese"]=requestHandlers.export_chinese;
 // handle["/tmp"]=requestHandlers.static;
 // handle["/show"]=requestHandlers.show;
 // handle["/spaces"]=requestHandlers.spaces;

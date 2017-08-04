@@ -2,10 +2,12 @@ var queryString = require("querystring");
 var url = require('url');
 var fs = require("fs"),
     formidable = require("formidable");
+var nodeExcel = require('excel-export');
 
-function start(response) {
-    console.log("Request handler 'start' was called.");
-
+function getTemplate(action,text,outlet){
+    action = action || '/upload';
+    text = text || '转换成二维';
+    outlet = outlet || '';
     var body = '<html>' +
         '<head>' +
         '<meta http-equiv="Content-Type" content="text/html; ' +
@@ -14,20 +16,29 @@ function start(response) {
         '</head>' +
         '<body class="container-fluid">' +
         '<h1>Format Json</h1>' +
-        '<form class="form-horizontal" action="/upload" method="post" enctype="multipart/form-data">' +
+        '<form class="form-horizontal" action="'+action+'" method="post" enctype="multipart/form-data">' +
         // '<textarea name="text" rows="20" cols="60"></textarea>'+
         '<div class="form-group">'+
             '<label for="inputEmail3" class="col-sm-2 control-label">上传文件</label>'+
             '<div class="col-sm-10"><input type="file" name="upload" multiple="multiple"></div>' +
         '</div>'+
         '<div class="form-group">'+
-            '<div class="col-sm-offset-2 col-sm-10"><input class="btn btn-primary" type="submit" value="转换成二维" /></div>' +
+            '<div class="col-sm-offset-2 col-sm-10"><input class="btn btn-primary" type="submit" value="'+text+'" /></div>' +
         '</div>'+
         // '<input type="submit" value="Submit text" />'+
         '</form>' +
+        '{{outlet}}' +
         '<script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>' +
         '</body>' +
         '</html>';
+    
+        body = body.replace('{{outlet}}',outlet);
+    
+    return body;
+}
+function start(response) {
+    console.log("Request handler 'start' was called.");
+    var body = getTemplate();
     response.writeHead(200, { "Content-Type": "text/html" });
     response.write(body);
     response.end();
@@ -111,11 +122,68 @@ function upload(response, request) {
     })
 }
 
+function exportChinese(response){
+    console.log("Request handler 'exportChinese' was called.");
+    var body = getTemplate('/do_export_chinese','导出中文excel文件');
+    response.writeHead(200, { "Content-Type": "text/html" });
+    response.write(body);
+    response.end();
+}
+function doExportChinese(response,request){
+    console.log("Request handler 'doExportChinese' was called.");
+    var form = new formidable.IncomingForm();
+    var result = [],
+        reg = /[\u4E00-\u9FA5]/g,
+        reg2 = /###/g;
+    console.log("about to parse");
+    form.parse(request, function(error, fields, files) {
+        var data=fs.readFileSync(files.upload.path,"utf-8");
+        var rData = formatData(data);
+        if(!fs.existsSync('tmp')){
+            fs.mkdirSync('tmp');
+        }
+        for(var i in rData){
+            if(reg.test(rData[i])){
+                if(reg2.test(rData[i])){
+                    var rArr = rData[i].split('###');
+                    result.push([rArr[0],rArr[1]])
+                }else{
+                    result.push([rData[i],''])
+                }
+            }
+        }
+        
+        // console.log('rData',rData)
+        var name = "tmp/export_"+files.upload.name.replace(/\.[^\.]+$/,'')+'.xlsx';
+        saveToExcel(name,result)
+        // fs.writeFile(name,JSON.stringify(rData),function(err){
+        //     if(err){
+        //         console.log(err)
+        //     }
+        //     console.log('success')
+        // })
+        // fs.rename(files.upload.path, name, function(error) {
+        //     if (error) {
+        //         fs.unlink(name);
+        //         fs.rename(files.upload.path, name);
+        //     }
+        // });
+        var outlet = '<div>download:<a href="'+name+'" download="export_'+files.upload.name+'" target="_blank">download</a> </div>';
+        var body = getTemplate('/do_export_chinese','导出中文excel文件',outlet)
+        
+        response.writeHead(200, { "Content-Type": "text/html" });
+        response.write(body);
+        response.end();
+    })
+}
 function show(response) {
     console.log('request handler "show" was called.');
     response.writeHead(200, { "Content-Type": "image/png" });
     fs.createReadStream("tmp/test.png").pipe(response);
 }
+
+
+
 function spaces(response,request){
     console.log('request handler "spaces" was called.' );
     console.log('request.method.toLowerCase',request.method.toLowerCase())
@@ -132,6 +200,33 @@ function spaces(response,request){
     }
     
 }
+
+
+function saveToExcel(fileName,data,cols){
+        // nodeExcel
+    fileName = fileName || 'overflowestack.xlsx';
+    cols = cols || [{
+            caption:'中文',type:'string',width:100
+        },{
+            caption:'备注',type:'string',width:100
+        }]
+    try{
+        var conf = {};
+        conf.cols = cols;
+        conf.rows = data;
+        var result = nodeExcel.execute(conf);
+        fs.writeFile(fileName, result, 'binary',function(err){
+            if(err){
+                console.log(err);
+            }
+        });
+    }catch(e){
+        console.log('保存excel报错:'+e)
+    }
+
+}
+
+
 function catalog2s(response){
     catalogs(response,2)
 }
@@ -210,3 +305,5 @@ exports.catalogs = catalogs;
 exports.catalog2s = catalog2s;
 exports.getData = getData;
 exports.getAticle = getAticle;
+exports.export_chinese = exportChinese;
+exports.do_export_chinese = doExportChinese;
