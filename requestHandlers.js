@@ -12,7 +12,7 @@ function start(response) {
         'charset=UTF-8" />' +
         '<link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">'+
         '</head>' +
-        '<body>' +
+        '<body class="container-fluid">' +
         '<h1>Format Json</h1>' +
         '<form class="form-horizontal" action="/upload" method="post" enctype="multipart/form-data">' +
         // '<textarea name="text" rows="20" cols="60"></textarea>'+
